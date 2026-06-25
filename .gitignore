@@ -1,0 +1,9 @@
+# Dados de usuários (nunca versionar — ficam no volume persistente do host)
+patrimo-db.json
+patrimo-users.json
+patrimo-tokens.json
+*.tmp
+
+__pycache__/
+.DS_Store
+.claude/

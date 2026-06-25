@@ -1,0 +1,2 @@
+# Patrimo usa apenas a biblioteca padrão do Python — sem dependências externas.
+# Este arquivo existe para o host detectar o projeto como Python.
