@@ -121,6 +121,8 @@ body {
   content: ""; position: absolute; inset: 5px; border-radius: 3px; background: var(--bg);
 }
 .logo-text { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
+.logo-words { display: inline-flex; flex-direction: column; justify-content: center; line-height: 1.04; }
+.logo-sub { font-family: var(--font-ui); font-weight: 400; font-size: 10.5px; letter-spacing: .04em; color: #fff; opacity: .82; margin-top: 1px; }
 .appbar-right { display: flex; gap: 8px; }
 .icon-btn {
   width: 38px; height: 38px; border-radius: 50%;
@@ -424,6 +426,7 @@ body {
 .auth-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
 .auth-brand .logo-mark { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg, var(--orange), var(--orange-2)); box-shadow: 0 0 18px var(--orange-glow); }
 .auth-brand .logo-text { font-weight: 800; font-size: 18px; letter-spacing: -.3px; }
+.auth-brand .logo-sub { font-size: 12px; }
 .auth-title { font-size: 22px; font-weight: 800; letter-spacing: -.4px; margin: 0 0 6px; }
 .auth-sub { color: var(--text-dim); font-size: 13.5px; margin: 0 0 20px; }
 .auth-error { display: none; color: var(--red); background: var(--red-soft); border: 1px solid rgba(255,90,110,.25); border-radius: 12px; padding: 10px 12px; font-size: 13px; font-weight: 600; margin: 2px 0 14px; }
@@ -485,6 +488,7 @@ body {
 }
 .intro-top .logo-mark { width: 22px; height: 22px; border-radius: 7px; box-shadow: 0 0 18px var(--orange-glow); }
 .intro-top .logo-text { font-size: 18px; font-weight: 700; }
+.intro-top .logo-sub { font-size: 12px; }
 .intro-skip {
   background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
   color: #fff; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 999px; cursor: pointer;

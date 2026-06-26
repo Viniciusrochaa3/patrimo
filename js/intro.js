@@ -23,7 +23,7 @@ const Intro = (() => {
         <div class="intro-vignette"></div>
 
         <header class="intro-top">
-          <div class="logo"><span class="logo-mark"></span><span class="logo-text">Patrimo</span></div>
+          <div class="logo"><span class="logo-mark"></span><span class="logo-words"><span class="logo-text">Patrimo</span><span class="logo-sub">invest.</span></span></div>
           <button class="intro-skip" id="introSkip">Pular</button>
         </header>
 

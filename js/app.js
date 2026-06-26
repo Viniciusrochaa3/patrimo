@@ -227,7 +227,7 @@ const App = (() => {
           <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="auth-card">
-          <div class="auth-brand"><span class="logo-mark"></span><span class="logo-text">Patrimo</span></div>
+          <div class="auth-brand"><span class="logo-mark"></span><span class="logo-words"><span class="logo-text">Patrimo</span><span class="logo-sub">invest.</span></span></div>
           <h1 class="auth-title">${isLogin ? 'Entrar na sua conta' : 'Criar sua conta'}</h1>
           <p class="auth-sub">${isLogin ? 'Acesse com seu e-mail e senha.' : 'Preencha os dados para começar.'}</p>
 
