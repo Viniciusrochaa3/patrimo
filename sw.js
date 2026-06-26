@@ -3,7 +3,7 @@
    - App próprio (HTML/CSS/JS): network-first com fallback ao cache (atualiza na hora online, funciona offline).
    - CDN e ícones: cache-first (raramente mudam).
    Dados do usuário ficam em localStorage (não dependem do SW). */
-const CACHE = 'patrimo-v6';
+const CACHE = 'patrimo-v7';
 const ASSETS = [
   './',
   './index.html',

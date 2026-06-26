@@ -41,6 +41,7 @@ const Store = (() => {
       investments, incomes, expenses, fixed,
       // histórico patrimonial mensal (12 meses) para o gráfico de evolução
       history: buildHistory(150000),
+      demo: true, // marca os dados de exemplo; some quando o usuário limpa
     };
   }
 
@@ -188,6 +189,7 @@ const Store = (() => {
   // série de evolução conforme range (D/S/M/A) — deriva do history mensal
   function evolutionSeries(range) {
     const h = state.history;
+    if (!h || !h.length) return [];
     if (range === 'A') return h.map((p) => ({ label: new Date(p.date).toLocaleDateString('pt-BR', { month: 'short' }), value: p.value }));
     if (range === 'M') return h.slice(-6).map((p) => ({ label: new Date(p.date).toLocaleDateString('pt-BR', { month: 'short' }), value: p.value }));
     // D e S: interpola os últimos pontos para granularidade fina
@@ -228,6 +230,26 @@ const Store = (() => {
 
   function reset() { localStorage.removeItem(KEY); state = load(); emit(); }
 
+  // ---------- dados de exemplo ----------
+  function isDemo() {
+    if (state.demo === true) return true;
+    // compatibilidade: dados antigos semeados antes da flag existir
+    if (state.demo === undefined && Array.isArray(state.investments)) {
+      const names = state.investments.map((i) => i.name);
+      return names.includes('CDB Banco X') && names.includes('Tesouro Selic');
+    }
+    return false;
+  }
+  function clearSample() {
+    state = {
+      goal: { target: 200000, label: 'Minha meta' },
+      investments: [], incomes: [], expenses: [], fixed: [],
+      history: [],
+      demo: false,
+    };
+    persist();
+  }
+
   // ---------- backup / restauração ----------
   function exportData() {
     return JSON.stringify({ app: 'patrimo', version: 1, exportedAt: new Date().toISOString(), data: state }, null, 2);
@@ -259,5 +281,6 @@ const Store = (() => {
     addInvestment, addIncome, addExpense, addFixed, remove, update, setGoal,
     totals, byBank, byType, expenseByCategory, investDaysOfMonth, aporteTrend, dueFixed,
     evolutionSeries, simulate, simCurve, investEarnings, reset, exportData, importData, getUpdatedAt,
+    isDemo, clearSample,
   };
 })();

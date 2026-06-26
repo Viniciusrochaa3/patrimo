@@ -26,7 +26,7 @@ const Screens = (() => {
       // previsão: usa crescimento médio mensal do histórico
       const h = Store.get().history;
       const mGrowth = h.length > 1 ? (h[h.length - 1].value / h[0].value) ** (1 / (h.length - 1)) - 1 : 0.02;
-      const monthsLeft = remaining > 0 && mGrowth > 0 ? Math.ceil(Math.log(g.target / t.patrimony) / Math.log(1 + mGrowth)) : 0;
+      const monthsLeft = remaining > 0 && mGrowth > 0 && t.patrimony > 0 ? Math.ceil(Math.log(g.target / t.patrimony) / Math.log(1 + mGrowth)) : 0;
       const forecast = new Date(); forecast.setMonth(forecast.getMonth() + monthsLeft);
 
       const due = Store.dueFixed();
@@ -42,8 +42,20 @@ const Screens = (() => {
             <button class="icon-btn" id="dueNotify" title="Ativar lembretes"><svg viewBox="0 0 24 24" width="18"><path d="M12 2a7 7 0 00-7 7v4l-2 3v1h18v-1l-2-3V9a7 7 0 00-7-7z" fill="currentColor"/></svg></button>
           </div>
         </div>` : '';
+      const sampleBanner = Store.isDemo() ? `
+        <div class="card" id="sampleBanner" style="border-color:rgba(255,138,43,.4);background:linear-gradient(180deg,rgba(255,106,0,.14),var(--card));margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="av" style="background:var(--orange-soft);color:var(--orange);flex-shrink:0"><svg viewBox="0 0 24 24" width="20"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 5a1.25 1.25 0 110 2.5A1.25 1.25 0 0112 7zm1.25 10h-2.5v-6h2.5z" fill="currentColor"/></svg></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:14.5px">Estes são dados de exemplo</div>
+              <div class="screen-sub" style="margin:2px 0 0">Explore o app à vontade. Quando quiser começar com os seus números, limpe tudo.</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="clearSample" style="margin-top:12px;width:100%">Limpar dados de exemplo</button>
+        </div>` : '';
       return `
       <section class="screen">
+        ${sampleBanner}
         <div class="hero blurable">
           <div class="hero-label">
             <svg viewBox="0 0 24 24" width="14" height="14"><path d="M3 11l9-8 9 8v9a2 2 0 01-2 2h-4v-6H9v6H5a2 2 0 01-2-2z" fill="currentColor"/></svg>
@@ -74,7 +86,7 @@ const Screens = (() => {
           <div class="progress"><span style="width:0%" data-w="${goalPct}"></span></div>
           <div class="goal-foot">
             <span>Faltam <b>${brl(remaining)}</b></span>
-            <span>Previsão: <b>${monthsLeft > 0 ? forecast.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : 'atingida 🎉'}</b></span>
+            <span>Previsão: <b>${monthsLeft > 0 ? forecast.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : (t.patrimony > 0 ? 'atingida 🎉' : '—')}</b></span>
           </div>
         </div>
 
@@ -126,6 +138,20 @@ const Screens = (() => {
       const notifyBtn = document.getElementById('dueNotify');
       if (notifyBtn) notifyBtn.onclick = () => Reminders.enable();
       Reminders.maybeNotify();
+      // limpar dados de exemplo
+      const clearBtn = document.getElementById('clearSample');
+      if (clearBtn) clearBtn.onclick = () => {
+        UI.openSheet(`
+          <h2>Limpar dados de exemplo?</h2>
+          <p class="sheet-sub">Vamos apagar todos os investimentos, receitas, despesas e contas de exemplo para você começar do zero com os seus próprios números. Esta ação não pode ser desfeita.</p>
+          <div class="btn-row">
+            <button class="btn btn-ghost" data-x>Cancelar</button>
+            <button class="btn btn-primary" data-y>Limpar tudo</button>
+          </div>`);
+        const s = document.querySelector('.sheet');
+        s.querySelector('[data-x]').onclick = UI.closeSheet;
+        s.querySelector('[data-y]').onclick = () => { Store.clearSample(); UI.closeSheet(); App.render(); UI.toast('Tudo limpo! Comece adicionando seus dados.'); };
+      };
     },
   };
 
