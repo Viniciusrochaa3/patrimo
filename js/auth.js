@@ -1,34 +1,45 @@
 /* ============================================================
-   Auth — login e cadastro por e-mail/senha contra o backend.
-   Guarda { token, email } em localStorage. A API fica no mesmo
-   endereço de onde o app foi servido (mesma origem).
-   Limitações honestas: o token mora no aparelho; sem verificação
-   de e-mail nem recuperação de senha; HTTP simples (use HTTPS/rede
-   confiável para tráfego real).
+   Auth — login e cadastro 100% locais (sem servidor).
+   Os usuários ficam salvos no próprio aparelho (localStorage):
+     patrimo.users   -> { email: { salt, hash, birthdate, createdAt } }
+     patrimo.auth    -> sessão atual { token, email }
+   A senha é guardada como hash SHA-256 com salt (não em texto puro).
+   Limitação honesta: é um login local — os dados moram neste
+   aparelho/navegador e não sincronizam entre dispositivos.
    ============================================================ */
 const Auth = (() => {
-  const STORE = 'patrimo.auth';
+  const SESSION = 'patrimo.auth';
+  const USERS = 'patrimo.users';
 
-  const session = () => {
-    try { return JSON.parse(localStorage.getItem(STORE)) || null; } catch (e) { return null; }
-  };
-  const setSession = (s) => { if (s) localStorage.setItem(STORE, JSON.stringify(s)); else localStorage.removeItem(STORE); };
+  const readUsers = () => { try { return JSON.parse(localStorage.getItem(USERS)) || {}; } catch (e) { return {}; } };
+  const writeUsers = (u) => localStorage.setItem(USERS, JSON.stringify(u));
+  const session = () => { try { return JSON.parse(localStorage.getItem(SESSION)) || null; } catch (e) { return null; } };
+  const setSession = (s) => { if (s) localStorage.setItem(SESSION, JSON.stringify(s)); else localStorage.removeItem(SESSION); };
 
-  const base = () => (location.origin && location.origin !== 'null') ? location.origin : '';
+  // mantidos por compatibilidade com o restante do app (sem servidor)
+  const base = () => '';
+  const authHeaders = () => ({});
   const token = () => { const s = session(); return s && s.token; };
   const email = () => { const s = session(); return s && s.email; };
   const isAuthed = () => !!token();
-  const authHeaders = () => { const t = token(); return t ? { Authorization: 'Bearer ' + t } : {}; };
 
-  async function post(path, body) {
-    const res = await fetch(base() + path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    let json = {};
-    try { json = await res.json(); } catch (e) { /* ignore */ }
-    return { ok: res.ok, status: res.status, json };
+  const randHex = (n) => {
+    const a = new Uint8Array(n);
+    if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(a);
+    else for (let i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 256);
+    return [...a].map((b) => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  async function hash(password, salt) {
+    const input = salt + ':' + password;
+    if (window.crypto && crypto.subtle) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+      return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+    // fallback simples (contextos sem WebCrypto, ex.: file://)
+    let h = 5381;
+    for (let i = 0; i < input.length; i++) h = ((h << 5) + h + input.charCodeAt(i)) | 0;
+    return 'f' + (h >>> 0).toString(16);
   }
 
   async function register({ email: em, password, confirm, birthdate }) {
@@ -37,23 +48,22 @@ const Auth = (() => {
     if ((password || '').length < 6) return { ok: false, error: 'A senha deve ter ao menos 6 caracteres' };
     if (password !== confirm) return { ok: false, error: 'As senhas não conferem' };
     if (!birthdate) return { ok: false, error: 'Informe a data de nascimento' };
-    try {
-      const r = await post('/api/register', { email: em, password, birthdate });
-      if (!r.ok) return { ok: false, error: (r.json && r.json.error) || 'Falha no cadastro' };
-      setSession({ token: r.json.token, email: r.json.email });
-      return { ok: true };
-    } catch (e) { return { ok: false, error: 'Servidor indisponível. Verifique se o backend está rodando.' }; }
+    const users = readUsers();
+    if (users[em]) return { ok: false, error: 'E-mail já cadastrado neste aparelho' };
+    const salt = randHex(8);
+    users[em] = { salt, hash: await hash(password, salt), birthdate, createdAt: Date.now() };
+    writeUsers(users);
+    setSession({ token: randHex(16), email: em });
+    return { ok: true };
   }
 
   async function login({ email: em, password }) {
     em = (em || '').trim().toLowerCase();
     if (!em || !password) return { ok: false, error: 'Preencha e-mail e senha' };
-    try {
-      const r = await post('/api/login', { email: em, password });
-      if (!r.ok) return { ok: false, error: (r.json && r.json.error) || 'Falha no login' };
-      setSession({ token: r.json.token, email: r.json.email });
-      return { ok: true };
-    } catch (e) { return { ok: false, error: 'Servidor indisponível. Verifique se o backend está rodando.' }; }
+    const u = readUsers()[em];
+    if (!u || (await hash(password, u.salt)) !== u.hash) return { ok: false, error: 'E-mail ou senha incorretos' };
+    setSession({ token: randHex(16), email: em });
+    return { ok: true };
   }
 
   function logout() { setSession(null); }

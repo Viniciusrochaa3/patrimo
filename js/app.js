@@ -348,22 +348,20 @@ const App = (() => {
   }
 
   function settingsSheet() {
-    const syncOn = Sync.enabled();
     const remOn = Reminders.enabled();
     const acc = Auth.email() || '';
     UI.openSheet(`
       <h2>Ajustes</h2>
-      <p class="sheet-sub">Sua conta sincroniza os dados automaticamente entre aparelhos.</p>
+      <p class="sheet-sub">Sua conta e seus dados ficam salvos neste aparelho.</p>
 
       <div class="section-head" style="margin:6px 2px 10px"><h3>Conta</h3>
-        <span class="pill ${syncOn ? 'up' : 'flat'}">${syncOn ? 'Sincronizando' : 'Offline'}</span></div>
+        <span class="pill up">Conectado</span></div>
       <div class="account-row">
         <div class="account-avatar">${UI.esc((acc[0] || '?').toUpperCase())}</div>
         <div class="account-meta"><div class="account-email">${UI.esc(acc || 'Não autenticado')}</div>
-          <div class="account-hint" id="sync_status">${syncOn ? 'Dados protegidos por login' : 'Faça login para sincronizar'}</div></div>
+          <div class="account-hint">Login salvo neste aparelho</div></div>
       </div>
       <div class="btn-row" style="margin:4px 0 6px">
-        <button class="btn btn-ghost" id="sync_now">Sincronizar agora</button>
         <button class="btn btn-ghost" id="set_logout">Sair</button>
       </div>
 
@@ -378,21 +376,12 @@ const App = (() => {
       <div class="section-head" style="margin:8px 2px 10px"><h3>Zona de risco</h3></div>
       <button class="btn btn-danger" id="set_reset">Restaurar dados de exemplo</button>`);
 
-    const status = (msg) => { const el = document.getElementById('sync_status'); if (el) el.textContent = msg; };
     document.getElementById('set_export').onclick = exportBackup;
     document.getElementById('set_import').onclick = importBackup;
     document.getElementById('set_reset').onclick = () => UI.confirmDelete('todos os seus dados atuais', () => { Store.reset(); UI.toast('Dados redefinidos'); navigate('dashboard'); });
 
     document.getElementById('set_remind').onclick = () => { if (Reminders.enabled()) { Reminders.disable(); } else { Reminders.enable(); } settingsSheet(); };
 
-    document.getElementById('sync_now').onclick = async () => {
-      if (!Sync.enabled()) return status('Faça login para sincronizar');
-      status('Sincronizando...');
-      const r = await Sync.pull();
-      if (r.ok && r.changed) navigate('dashboard');
-      await Sync.push();
-      status(r.ok ? 'Sincronizado ✓' : r.error);
-    };
     document.getElementById('set_logout').onclick = () => UI.confirmDelete('sua sessão (você precisará entrar novamente)', () => {
       Auth.logout(); UI.closeSheet(); showGate();
     });
