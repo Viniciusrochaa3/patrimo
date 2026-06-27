@@ -232,9 +232,9 @@ const App = (() => {
           <p class="auth-sub">${isLogin ? 'Acesse com seu e-mail e senha.' : 'Preencha os dados para começar.'}</p>
 
           <div class="field"><label>E-mail</label><input id="au_email" type="email" autocomplete="email" placeholder="voce@email.com"></div>
-          <div class="field"><label>Senha</label><input id="au_pass" type="password" autocomplete="${isLogin ? 'current-password' : 'new-password'}" placeholder="Sua senha"></div>
+          <div class="field"><label>Senha</label><div class="pw-wrap"><input id="au_pass" type="password" autocomplete="${isLogin ? 'current-password' : 'new-password'}" placeholder="Sua senha"><button type="button" class="pw-toggle" data-pw="au_pass" aria-label="Mostrar senha"></button></div></div>
           ${isLogin ? '' : `
-          <div class="field"><label>Confirmar senha</label><input id="au_pass2" type="password" autocomplete="new-password" placeholder="Repita a senha"></div>
+          <div class="field"><label>Confirmar senha</label><div class="pw-wrap"><input id="au_pass2" type="password" autocomplete="new-password" placeholder="Repita a senha"><button type="button" class="pw-toggle" data-pw="au_pass2" aria-label="Mostrar senha"></button></div></div>
           <div class="field"><label>Data de nascimento</label><input id="au_birth" type="date"></div>`}
 
           <p class="auth-error" id="au_err"></p>
@@ -251,6 +251,19 @@ const App = (() => {
     const toLogin = document.getElementById('au_toLogin');
     if (toReg) toReg.onclick = () => renderGate('register');
     if (toLogin) toLogin.onclick = () => renderGate('login');
+
+    const eyeOpen = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const eyeOff = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0112 4c6.5 0 10 7 10 7a17.6 17.6 0 01-2.16 3.19M6.6 6.6A17.6 17.6 0 002 11s3.5 7 10 7a9.1 9.1 0 004.1-.96"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/><path d="M3 3l18 18"/></svg>`;
+    root.querySelectorAll('.pw-toggle').forEach((btn) => {
+      btn.innerHTML = eyeOpen;
+      btn.onclick = () => {
+        const inp = document.getElementById(btn.dataset.pw);
+        const show = inp.type === 'password';
+        inp.type = show ? 'text' : 'password';
+        btn.innerHTML = show ? eyeOff : eyeOpen;
+        btn.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
+      };
+    });
 
     const submit = document.getElementById('au_submit');
     submit.onclick = async () => {
