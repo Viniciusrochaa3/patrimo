@@ -283,6 +283,13 @@ const App = (() => {
       }
       submit.disabled = false; submit.textContent = isLogin ? 'Entrar' : 'Cadastrar';
       if (!res.ok) return err(res.error);
+      if (res.needsConfirm) {
+        const el = document.getElementById('au_err');
+        el.style.color = 'var(--text-dim)';
+        el.style.display = 'block';
+        el.textContent = 'Conta criada! Enviamos um e-mail de confirmação — confirme e depois entre.';
+        return;
+      }
       hideGate();
       await boot(true);
       UI.toast(isLogin ? 'Bem-vindo de volta' : 'Conta criada com sucesso');
@@ -395,12 +402,12 @@ const App = (() => {
 
     document.getElementById('set_remind').onclick = () => { if (Reminders.enabled()) { Reminders.disable(); } else { Reminders.enable(); } settingsSheet(); };
 
-    document.getElementById('set_logout').onclick = () => UI.confirmDelete('sua sessão (você precisará entrar novamente)', () => {
-      Auth.logout(); UI.closeSheet(); showGate();
+    document.getElementById('set_logout').onclick = () => UI.confirmDelete('sua sessão (você precisará entrar novamente)', async () => {
+      await Auth.logout(); UI.closeSheet(); showGate();
     });
   }
 
-  function init() {
+  async function init() {
     document.querySelectorAll('.nav-item').forEach((b) => b.addEventListener('click', () => navigate(b.dataset.route)));
     document.getElementById('navFab').addEventListener('click', fabSheet);
     document.getElementById('btnSettings').addEventListener('click', settingsSheet);
@@ -416,6 +423,8 @@ const App = (() => {
     Store.subscribe(() => Sync.schedulePush());
     if (!Charts.ready()) console.warn('Chart.js não carregou — verifique a conexão (CDN).');
 
+    // restaura a sessão da nuvem antes de decidir a tela inicial
+    await Auth.restore();
     // gate de autenticação: logado vai direto ao app; senão, capa animada
     if (Auth.isAuthed()) boot(false);
     else showIntro();

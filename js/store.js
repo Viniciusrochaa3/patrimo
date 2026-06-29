@@ -276,11 +276,19 @@ const Store = (() => {
 
   const getUpdatedAt = () => state.updatedAt || 0;
 
+  // substitui o estado inteiro (usado pela sincronização com a nuvem)
+  function replaceState(obj, opts = {}) {
+    if (!obj || typeof obj !== 'object' || !Array.isArray(obj.investments)) return false;
+    state = obj;
+    if (opts.keepUpdatedAt) _save(); else persist();
+    return true;
+  }
+
   return {
     get: () => state, subscribe,
     addInvestment, addIncome, addExpense, addFixed, remove, update, setGoal,
     totals, byBank, byType, expenseByCategory, investDaysOfMonth, aporteTrend, dueFixed,
     evolutionSeries, simulate, simCurve, investEarnings, reset, exportData, importData, getUpdatedAt,
-    isDemo, clearSample,
+    isDemo, clearSample, replaceState,
   };
 })();

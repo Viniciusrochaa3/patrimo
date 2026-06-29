@@ -3,11 +3,12 @@
    - App próprio (HTML/CSS/JS): network-first com fallback ao cache (atualiza na hora online, funciona offline).
    - CDN e ícones: cache-first (raramente mudam).
    Dados do usuário ficam em localStorage (não dependem do SW). */
-const CACHE = 'patrimo-v7';
+const CACHE = 'patrimo-v8';
 const ASSETS = [
   './',
   './index.html',
   './css/theme.css',
+  './js/config.js',
   './js/store.js',
   './js/charts.js',
   './js/ui.js',
@@ -23,6 +24,7 @@ const ASSETS = [
   './icons/maskable-512.png',
   './icons/apple-touch-icon.png',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
 ];
 
 self.addEventListener('install', (e) => {
