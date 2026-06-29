@@ -133,6 +133,24 @@ body {
 .icon-btn:active { transform: scale(0.92); }
 .icon-btn.on { color: var(--orange); border-color: rgba(255,106,0,.3); background: var(--orange-soft); }
 
+/* indicador de sincronização com a nuvem */
+.sync-status { position: relative; color: var(--text-faint); }
+.sync-status[hidden] { display: none; }
+.sync-status .sync-dot {
+  position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-faint); border: 2px solid var(--bg-elev-2);
+  box-sizing: content-box; transition: background .25s; opacity: 0;
+}
+.sync-status.is-idle { color: #57c98a; }
+.sync-status.is-idle .sync-dot { opacity: 0; }
+.sync-status.is-saving { color: var(--orange); }
+.sync-status.is-saving .sync-dot { opacity: 1; background: var(--orange); animation: sync-pulse 1s ease-in-out infinite; }
+.sync-status.is-synced { color: #57c98a; }
+.sync-status.is-synced .sync-dot { opacity: 1; background: #57c98a; }
+.sync-status.is-error { color: var(--red); border-color: rgba(255,90,110,.3); }
+.sync-status.is-error .sync-dot { opacity: 1; background: var(--red); }
+@keyframes sync-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: .5; } }
+
 /* ===================== View / scroll ===================== */
 .view {
   flex: 1;
@@ -438,6 +456,9 @@ body {
 .auth-card .btn-primary { margin-top: 4px; }
 .auth-switch { text-align: center; color: var(--text-dim); font-size: 13.5px; margin: 16px 0 0; }
 .auth-switch a { color: var(--orange); font-weight: 700; cursor: pointer; }
+.auth-forgot { text-align: center; margin: 14px 0 0; }
+.auth-forgot a { color: var(--text-dim); font-size: 13px; font-weight: 600; cursor: pointer; transition: color .2s; }
+.auth-forgot a:hover { color: var(--text); }
 
 /* ---------- Conta (ajustes) ---------- */
 .account-row { display: flex; align-items: center; gap: 12px; background: var(--bg-elev-2); border: 1px solid var(--stroke); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }

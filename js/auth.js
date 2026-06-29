@@ -6,6 +6,8 @@
    ============================================================ */
 const Auth = (() => {
   let _session = null;
+  let _recovery = SUPA_RECOVERY === true; // chegou pelo link de redefinição?
+  let _onRecovery = null;
 
   // traduz erros comuns do Supabase para PT-BR
   function mapErr(error) {
@@ -21,12 +23,39 @@ const Auth = (() => {
   // restaura a sessão salva e escuta mudanças (boot)
   async function restore() {
     if (!SB) return null;
+    // registra o listener ANTES de getSession para não perder o evento de recovery
+    SB.auth.onAuthStateChange((event, s) => {
+      _session = s;
+      if (event === 'PASSWORD_RECOVERY') { _recovery = true; if (_onRecovery) _onRecovery(); }
+    });
     try {
       const { data } = await SB.auth.getSession();
       _session = data.session || null;
     } catch (e) { _session = null; }
-    SB.auth.onAuthStateChange((_e, s) => { _session = s; });
     return _session;
+  }
+
+  const isRecovery = () => _recovery;
+  const onRecovery = (fn) => { _onRecovery = fn; };
+
+  // envia e-mail com link para redefinir a senha
+  async function resetPassword(em) {
+    if (!SB) return { ok: false, error: 'Backend indisponível' };
+    em = (em || '').trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return { ok: false, error: 'Informe um e-mail válido' };
+    const { error } = await SB.auth.resetPasswordForEmail(em, { redirectTo: window.location.origin });
+    if (error) return { ok: false, error: mapErr(error) };
+    return { ok: true };
+  }
+
+  // define a nova senha (usado após chegar pelo link de recovery)
+  async function updatePassword(newPass) {
+    if (!SB) return { ok: false, error: 'Backend indisponível' };
+    if ((newPass || '').length < 6) return { ok: false, error: 'A senha deve ter ao menos 6 caracteres' };
+    const { error } = await SB.auth.updateUser({ password: newPass });
+    if (error) return { ok: false, error: mapErr(error) };
+    _recovery = false;
+    return { ok: true };
   }
 
   const isAuthed = () => !!_session;
@@ -67,5 +96,6 @@ const Auth = (() => {
     _session = null;
   }
 
-  return { restore, register, login, logout, token, email, userId, isAuthed, authHeaders, base };
+  return { restore, register, login, logout, token, email, userId, isAuthed, authHeaders, base,
+    resetPassword, updatePassword, isRecovery, onRecovery };
 })();

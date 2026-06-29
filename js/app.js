@@ -239,6 +239,7 @@ const App = (() => {
 
           <p class="auth-error" id="au_err"></p>
           <button class="btn btn-primary" id="au_submit">${isLogin ? 'Entrar' : 'Cadastrar'}</button>
+          ${isLogin ? '<p class="auth-forgot"><a id="au_forgot">Esqueci minha senha</a></p>' : ''}
           <p class="auth-switch">${isLogin
             ? 'Ainda não tem conta? <a id="au_toReg">Cadastre-se</a>'
             : 'Já tem conta? <a id="au_toLogin">Entrar</a>'}</p>
@@ -252,18 +253,23 @@ const App = (() => {
     if (toReg) toReg.onclick = () => renderGate('register');
     if (toLogin) toLogin.onclick = () => renderGate('login');
 
+    const forgot = document.getElementById('au_forgot');
+    if (forgot) forgot.onclick = async () => {
+      const em = document.getElementById('au_email').value;
+      if (!em || !em.trim()) { err('Digite seu e-mail acima e toque novamente em "Esqueci minha senha".'); document.getElementById('au_email').focus(); return; }
+      forgot.textContent = 'Enviando…'; forgot.style.pointerEvents = 'none';
+      const res = await Auth.resetPassword(em);
+      forgot.textContent = 'Esqueci minha senha'; forgot.style.pointerEvents = '';
+      if (!res.ok) return err(res.error);
+      const el = document.getElementById('au_err');
+      el.style.color = 'var(--text-dim)'; el.style.background = 'transparent'; el.style.borderColor = 'transparent';
+      el.style.display = 'block';
+      el.textContent = 'Enviamos um link de redefinição para o seu e-mail. Abra-o neste aparelho para criar uma nova senha.';
+    };
+
     const eyeOpen = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
     const eyeOff = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0112 4c6.5 0 10 7 10 7a17.6 17.6 0 01-2.16 3.19M6.6 6.6A17.6 17.6 0 002 11s3.5 7 10 7a9.1 9.1 0 004.1-.96"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/><path d="M3 3l18 18"/></svg>`;
-    root.querySelectorAll('.pw-toggle').forEach((btn) => {
-      btn.innerHTML = eyeOpen;
-      btn.onclick = () => {
-        const inp = document.getElementById(btn.dataset.pw);
-        const show = inp.type === 'password';
-        inp.type = show ? 'text' : 'password';
-        btn.innerHTML = show ? eyeOff : eyeOpen;
-        btn.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
-      };
-    });
+    bindEyeToggles(root);
 
     const submit = document.getElementById('au_submit');
     submit.onclick = async () => {
@@ -298,10 +304,69 @@ const App = (() => {
     root.querySelectorAll('input').forEach((inp) => inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit.click(); }));
   }
 
+  // tela de definir nova senha (após chegar pelo link de redefinição)
+  function showRecovery() {
+    document.getElementById('app').style.display = 'none';
+    if (Intro.destroy) Intro.destroy();
+    const intro = document.getElementById('intro-root'); if (intro) intro.innerHTML = '';
+    const root = document.getElementById('auth-root');
+    root.innerHTML = `
+      <div class="auth-screen">
+        <div class="auth-card">
+          <div class="auth-brand"><span class="logo-mark"></span><span class="logo-words"><span class="logo-text">Patrimo</span><span class="logo-sub">invest.</span></span></div>
+          <h1 class="auth-title">Criar nova senha</h1>
+          <p class="auth-sub">Defina a nova senha da sua conta.</p>
+          <div class="field"><label>Nova senha</label><div class="pw-wrap"><input id="rc_pass" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres"><button type="button" class="pw-toggle" data-pw="rc_pass" aria-label="Mostrar senha"></button></div></div>
+          <div class="field"><label>Confirmar nova senha</label><div class="pw-wrap"><input id="rc_pass2" type="password" autocomplete="new-password" placeholder="Repita a senha"><button type="button" class="pw-toggle" data-pw="rc_pass2" aria-label="Mostrar senha"></button></div></div>
+          <p class="auth-error" id="rc_err"></p>
+          <button class="btn btn-primary" id="rc_submit">Salvar nova senha</button>
+        </div>
+      </div>`;
+
+    const err = (m) => { const el = document.getElementById('rc_err'); el.style.color = ''; el.style.background = ''; el.style.borderColor = ''; el.textContent = m || ''; el.style.display = m ? 'block' : 'none'; };
+    bindEyeToggles(root);
+
+    const submit = document.getElementById('rc_submit');
+    submit.onclick = async () => {
+      err('');
+      const p1 = document.getElementById('rc_pass').value;
+      const p2 = document.getElementById('rc_pass2').value;
+      if (p1.length < 6) return err('A senha deve ter ao menos 6 caracteres');
+      if (p1 !== p2) return err('As senhas não conferem');
+      submit.disabled = true; submit.textContent = 'Salvando…';
+      const res = await Auth.updatePassword(p1);
+      submit.disabled = false; submit.textContent = 'Salvar nova senha';
+      if (!res.ok) return err(res.error);
+      // limpa o token da URL e entra no app
+      if (history.replaceState) history.replaceState(null, '', window.location.pathname);
+      hideGate();
+      await boot(true);
+      UI.toast('Senha alterada com sucesso');
+    };
+    root.querySelectorAll('input').forEach((inp) => inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit.click(); }));
+  }
+
+  // adiciona o olho de "ver senha" aos campos dentro de um container
+  function bindEyeToggles(root) {
+    const eyeOpen = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const eyeOff = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0112 4c6.5 0 10 7 10 7a17.6 17.6 0 01-2.16 3.19M6.6 6.6A17.6 17.6 0 002 11s3.5 7 10 7a9.1 9.1 0 004.1-.96"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/><path d="M3 3l18 18"/></svg>`;
+    root.querySelectorAll('.pw-toggle').forEach((btn) => {
+      btn.innerHTML = eyeOpen;
+      btn.onclick = () => {
+        const inp = document.getElementById(btn.dataset.pw);
+        const show = inp.type === 'password';
+        inp.type = show ? 'text' : 'password';
+        btn.innerHTML = show ? eyeOff : eyeOpen;
+        btn.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
+      };
+    });
+  }
+
   // carrega o app após autenticar (ou na inicialização, se já logado)
   async function boot(justLoggedIn) {
     render();
     if (Sync.enabled()) {
+      setSyncStatus('synced'); // mostra o indicador (idle) ao entrar
       const r = await Sync.pull();
       if (r && r.changed) render();
       // conta nova/aparelho novo: garante que a nuvem tenha o estado local
@@ -411,6 +476,9 @@ const App = (() => {
     document.querySelectorAll('.nav-item').forEach((b) => b.addEventListener('click', () => navigate(b.dataset.route)));
     document.getElementById('navFab').addEventListener('click', fabSheet);
     document.getElementById('btnSettings').addEventListener('click', settingsSheet);
+    document.getElementById('syncStatus').addEventListener('click', () => {
+      if (Sync.enabled()) Sync.push();
+    });
 
     const hideBtn = document.getElementById('btnHideValues');
     hideBtn.addEventListener('click', () => {
@@ -423,11 +491,34 @@ const App = (() => {
     Store.subscribe(() => Sync.schedulePush());
     if (!Charts.ready()) console.warn('Chart.js não carregou — verifique a conexão (CDN).');
 
+    // indicador de sincronização (topo)
+    Sync.onStatus(setSyncStatus);
+
+    // se o usuário chegou pelo link de redefinição de senha, mostra a tela de nova senha
+    Auth.onRecovery(showRecovery);
+
     // restaura a sessão da nuvem antes de decidir a tela inicial
     await Auth.restore();
+    if (Auth.isRecovery()) { showRecovery(); return; }
     // gate de autenticação: logado vai direto ao app; senão, capa animada
     if (Auth.isAuthed()) boot(false);
     else showIntro();
+  }
+
+  let syncIdleTimer = null;
+  function setSyncStatus(state) {
+    const el = document.getElementById('syncStatus');
+    if (!el) return;
+    if (!Sync.enabled()) { el.hidden = true; return; }
+    el.hidden = false;
+    el.classList.remove('is-idle', 'is-saving', 'is-synced', 'is-error');
+    clearTimeout(syncIdleTimer);
+    if (state === 'saving') { el.classList.add('is-saving'); el.title = 'Salvando…'; }
+    else if (state === 'error') { el.classList.add('is-error'); el.title = 'Falha ao sincronizar — toque para tentar de novo'; }
+    else { // synced
+      el.classList.add('is-synced'); el.title = 'Sincronizado';
+      syncIdleTimer = setTimeout(() => { el.classList.remove('is-synced'); el.classList.add('is-idle'); }, 1800);
+    }
   }
 
   return { navigate, render, init };
